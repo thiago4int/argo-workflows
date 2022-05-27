@@ -3,38 +3,40 @@ package s3
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
-	"time"
 
 	"github.com/argoproj/pkg/file"
 	argos3 "github.com/argoproj/pkg/s3"
 	"github.com/minio/minio-go/v7"
 	log "github.com/sirupsen/logrus"
-	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/util/retry"
 
 	"github.com/argoproj/argo-workflows/v3/errors"
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	waitutil "github.com/argoproj/argo-workflows/v3/util/wait"
 	artifactscommon "github.com/argoproj/argo-workflows/v3/workflow/artifacts/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/common"
+	executorretry "github.com/argoproj/argo-workflows/v3/workflow/executor/retry"
 )
 
 // ArtifactDriver is a driver for AWS S3
 type ArtifactDriver struct {
-	Endpoint    string
-	Region      string
-	Secure      bool
-	AccessKey   string
-	SecretKey   string
-	RoleARN     string
-	UseSDKCreds bool
-	Context     context.Context
+	Endpoint              string
+	Region                string
+	Secure                bool
+	AccessKey             string
+	SecretKey             string
+	RoleARN               string
+	UseSDKCreds           bool
+	Context               context.Context
+	KmsKeyId              string
+	KmsEncryptionContext  string
+	EnableEncryption      bool
+	ServerSideCustomerKey string
 }
 
-var (
-	_            artifactscommon.ArtifactDriver = &ArtifactDriver{}
-	defaultRetry                                = wait.Backoff{Duration: time.Second * 2, Factor: 2.0, Steps: 5, Jitter: 0.1}
-)
+var _ artifactscommon.ArtifactDriver = &ArtifactDriver{}
 
 // newMinioClient instantiates a new minio client object.
 func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Client, error) {
@@ -47,7 +49,14 @@ func (s3Driver *ArtifactDriver) newS3Client(ctx context.Context) (argos3.S3Clien
 		RoleARN:     s3Driver.RoleARN,
 		Trace:       os.Getenv(common.EnvVarArgoTrace) == "1",
 		UseSDKCreds: s3Driver.UseSDKCreds,
+		EncryptOpts: argos3.EncryptOpts{
+			KmsKeyId:              s3Driver.KmsKeyId,
+			KmsEncryptionContext:  s3Driver.KmsEncryptionContext,
+			Enabled:               s3Driver.EnableEncryption,
+			ServerSideCustomerKey: s3Driver.ServerSideCustomerKey,
+		},
 	}
+
 	return argos3.NewS3Client(ctx, opts)
 }
 
@@ -56,7 +65,7 @@ func (s3Driver *ArtifactDriver) Load(inputArtifact *wfv1.Artifact, path string) 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := waitutil.Backoff(defaultRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			log.Infof("S3 Load path: %s, key: %s", path, inputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
@@ -80,7 +89,7 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
 		return !isTransientS3Err(origErr), fmt.Errorf("failed to get file: %v", origErr)
 	}
-	// If we get here, the error was a NoSuchKey. The key might be a s3 "directory"
+	// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
 	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
 	if err != nil {
 		return !isTransientS3Err(err), fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
@@ -96,12 +105,46 @@ func loadS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact, path st
 	return true, nil
 }
 
+// OpenStream opens a stream reader for an artifact from S3 compliant storage
+func (s3Driver *ArtifactDriver) OpenStream(inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	log.Infof("S3 OpenStream: key: %s", inputArtifact.S3.Key)
+	s3cli, err := s3Driver.newS3Client(context.TODO())
+	if err != nil {
+		return nil, fmt.Errorf("failed to create new S3 client: %v", err)
+	}
+
+	return streamS3Artifact(s3cli, inputArtifact)
+
+}
+
+func streamS3Artifact(s3cli argos3.S3Client, inputArtifact *wfv1.Artifact) (io.ReadCloser, error) {
+	stream, origErr := s3cli.OpenFile(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if origErr == nil {
+		return stream, nil
+	}
+	if !argos3.IsS3ErrCode(origErr, "NoSuchKey") {
+		return nil, fmt.Errorf("failed to get file: %v", origErr)
+	}
+	// If we get here, the error was a NoSuchKey. The key might be an s3 "directory"
+	isDir, err := s3cli.IsDirectory(inputArtifact.S3.Bucket, inputArtifact.S3.Key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to test if %s is a directory: %v", inputArtifact.S3.Key, err)
+	}
+	if !isDir {
+		// It's neither a file, nor a directory. Return the original NoSuchKey error
+		return nil, errors.New(errors.CodeNotFound, origErr.Error())
+	}
+	// directory case:
+	// todo: make a .tgz file which can be streamed to user
+	return nil, errors.New(errors.CodeNotImplemented, "Directory Stream capability currently unimplemented for S3")
+}
+
 // Save saves an artifact to S3 compliant storage
 func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := waitutil.Backoff(defaultRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			log.Infof("S3 Save path: %s, key: %s", path, outputArtifact.S3.Key)
 			s3cli, err := s3Driver.newS3Client(ctx)
@@ -110,6 +153,23 @@ func (s3Driver *ArtifactDriver) Save(path string, outputArtifact *wfv1.Artifact)
 			}
 			return saveS3Artifact(s3cli, path, outputArtifact)
 		})
+	return err
+}
+
+// Delete deletes an artifact from an S3 compliant storage
+func (s3Driver *ArtifactDriver) Delete(artifact *wfv1.Artifact) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := retry.OnError(retry.DefaultBackoff, isTransientS3Err, func() error {
+		log.Infof("S3 Delete artifact: key: %s", artifact.S3.Key)
+		s3cli, err := s3Driver.newS3Client(ctx)
+		if err != nil {
+			return err
+		}
+		return s3cli.Delete(artifact.S3.Bucket, artifact.S3.Key)
+	})
+
 	return err
 }
 
@@ -151,7 +211,7 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 	defer cancel()
 
 	var files []string
-	err := waitutil.Backoff(defaultRetry,
+	err := waitutil.Backoff(executorretry.ExecutorRetry,
 		func() (bool, error) {
 			s3cli, err := s3Driver.newS3Client(ctx)
 			if err != nil {
@@ -161,8 +221,17 @@ func (s3Driver *ArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, 
 			if err != nil {
 				return !isTransientS3Err(err), fmt.Errorf("failed to list directory: %v", err)
 			}
+			log.Debugf("successfully listing S3 directory associated with bucket: %s and key %s: %v", artifact.S3.Bucket, artifact.S3.Key, files)
 			return true, nil
 		})
 
 	return files, err
+}
+
+func (s3Driver *ArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	s3cli, err := s3Driver.newS3Client(context.TODO())
+	if err != nil {
+		return false, err
+	}
+	return s3cli.IsDirectory(artifact.S3.Bucket, artifact.S3.Key)
 }

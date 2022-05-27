@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/TwinProduction/go-color"
+	"github.com/TwiN/go-color"
 	"github.com/stretchr/testify/suite"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -60,12 +60,12 @@ func (s *E2ESuite) SetupSuite() {
 	s.CheckError(err)
 	s.KubeClient, err = kubernetes.NewForConfig(s.RestConfig)
 	s.CheckError(err)
-	configController := config.NewController(Namespace, "workflow-controller-configmap", s.KubeClient, config.EmptyConfigFunc)
+	configController := config.NewController(Namespace, common.ConfigMapName, s.KubeClient)
 
 	ctx := context.Background()
 	c, err := configController.Get(ctx)
 	s.CheckError(err)
-	s.Config = c.(*config.Config)
+	s.Config = c
 	s.wfClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().Workflows(Namespace)
 	s.wfebClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowEventBindings(Namespace)
 	s.wfTemplateClient = versioned.NewForConfigOrDie(s.RestConfig).ArgoprojV1alpha1().WorkflowTemplates(Namespace)
@@ -79,6 +79,9 @@ func (s *E2ESuite) TearDownSuite() {
 	s.Persistence.Close()
 	for _, x := range s.slowTests {
 		_, _ = fmt.Println(color.Ize(color.Yellow, fmt.Sprintf("=== SLOW TEST:  %s", x)))
+	}
+	if s.T().Failed() {
+		s.T().Log("to learn how to diagnose failed tests: https://argoproj.github.io/argo-workflows/running-locally/#running-e2e-tests-locally")
 	}
 }
 
@@ -145,20 +148,11 @@ func (s *E2ESuite) DeleteResources() {
 		archive := s.Persistence.workflowArchive
 		parse, err := labels.ParseToRequirements(Label)
 		s.CheckError(err)
-		workflows, err := archive.ListWorkflows(Namespace, time.Time{}, time.Time{}, parse, 0, 0)
+		workflows, err := archive.ListWorkflows(Namespace, "", "", time.Time{}, time.Time{}, parse, 0, 0)
 		s.CheckError(err)
 		for _, w := range workflows {
 			err := archive.DeleteWorkflow(string(w.UID))
 			s.CheckError(err)
-		}
-	}
-}
-
-func (s *E2ESuite) Need(needs ...Need) {
-	for _, n := range needs {
-		met, message := n(s)
-		if !met {
-			s.T().Skip("unmet need: " + message)
 		}
 	}
 }

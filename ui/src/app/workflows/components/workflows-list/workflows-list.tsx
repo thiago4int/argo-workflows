@@ -109,7 +109,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.state = {
             pagination: {
                 offset: this.queryParam('offset'),
-                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 500
+                limit: parseLimit(this.queryParam('limit')) || savedOptions.paginationLimit || 50
             },
             namespace: Utils.getNamespace(this.props.match.params.namespace) || '',
             selectedPhases: phaseQueryParam.length > 0 ? (phaseQueryParam as WorkflowPhase[]) : savedOptions.selectedPhases,
@@ -123,6 +123,7 @@ export class WorkflowsList extends BasePage<RouteComponentProps<any>, State> {
         this.setState({selectedWorkflows: new Map<string, models.Workflow>()}, () => {
             this.fetchWorkflows(this.state.namespace, this.state.selectedPhases, this.state.selectedLabels, this.state.pagination);
         });
+        services.info.collectEvent('openedWorkflowList').then();
     }
 
     public componentWillUnmount(): void {

@@ -1,12 +1,19 @@
 package artifacts
 
 import (
+	"bytes"
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
+
+	apierr "k8s.io/apimachinery/pkg/api/errors"
 
 	"github.com/stretchr/testify/assert"
 	testhttp "github.com/stretchr/testify/http"
@@ -41,11 +48,54 @@ type fakeArtifactDriver struct {
 }
 
 func (a *fakeArtifactDriver) Load(_ *wfv1.Artifact, path string) error {
-	return ioutil.WriteFile(path, a.data, 0o666)
+	return ioutil.WriteFile(path, a.data, 0o600)
+}
+
+func (a *fakeArtifactDriver) OpenStream(artifact *wfv1.Artifact) (io.ReadCloser, error) {
+	key, err := artifact.ArtifactLocation.GetKey()
+	if err != nil {
+		return nil, err
+	}
+	if strings.HasSuffix(key, "notafile.txt") {
+		return nil, errors.New("not a valid file")
+	}
+	return io.NopCloser(bytes.NewReader(a.data)), nil
 }
 
 func (a *fakeArtifactDriver) Save(_ string, _ *wfv1.Artifact) error {
 	return fmt.Errorf("not implemented")
+}
+
+func (a *fakeArtifactDriver) IsDirectory(artifact *wfv1.Artifact) (bool, error) {
+	key, err := artifact.GetKey()
+	if err != nil {
+		return false, err
+	}
+
+	return strings.HasSuffix(key, "my-s3-artifact-directory") || strings.HasSuffix(key, "my-s3-artifact-directory/"), nil
+}
+
+func (a *fakeArtifactDriver) ListObjects(artifact *wfv1.Artifact) ([]string, error) {
+	key, err := artifact.GetKey()
+	if err != nil {
+		return nil, err
+	}
+	if artifact.Name == "my-s3-artifact-directory" {
+		if strings.HasSuffix(key, "subdirectory") {
+			return []string{
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/b.txt",
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/c.txt",
+			}, nil
+		} else {
+			return []string{
+				"my-wf/my-node/my-s3-artifact-directory/a.txt",
+				"my-wf/my-node/my-s3-artifact-directory/index.html",
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/b.txt",
+				"my-wf/my-node/my-s3-artifact-directory/subdirectory/c.txt",
+			}, nil
+		}
+	}
+	return []string{}, nil
 }
 
 func newServer() *ArtifactServer {
@@ -83,6 +133,15 @@ func newServer() *ArtifactServer {
 								},
 							},
 							{
+								Name: "my-s3-artifact-directory",
+								ArtifactLocation: wfv1.ArtifactLocation{
+									S3: &wfv1.S3Artifact{
+										// S3 is a configured artifact repo, so does not need key
+										Key: "my-wf/my-node/my-s3-artifact-directory",
+									},
+								},
+							},
+							{
 								Name: "my-gcs-artifact",
 								ArtifactLocation: wfv1.ArtifactLocation{
 									GCS: &wfv1.GCSArtifact{
@@ -109,6 +168,8 @@ func newServer() *ArtifactServer {
 						},
 					},
 				},
+				// a node without input/output artifacts
+				"my-node-no-artifacts": wfv1.NodeStatus{},
 			},
 		},
 	}
@@ -116,7 +177,7 @@ func newServer() *ArtifactServer {
 		ObjectMeta: metav1.ObjectMeta{Namespace: "my-ns", Name: "your-wf"},
 	})
 	ctx := context.WithValue(context.WithValue(context.Background(), auth.KubeKey, kube), auth.WfKey, argo)
-	gatekeeper.On("Context", mock.Anything).Return(ctx, nil)
+	gatekeeper.On("ContextWithRequest", mock.Anything, mock.Anything).Return(ctx, nil)
 	a := &sqldbmocks.WorkflowArchive{}
 	a.On("GetWorkflow", "my-uuid").Return(wf, nil)
 
@@ -134,6 +195,89 @@ func newServer() *ArtifactServer {
 	})
 
 	return newArtifactServer(gatekeeper, hydratorfake.Noop, a, instanceid.NewService(instanceId), fakeArtifactDriverFactory, artifactRepositories)
+}
+
+func TestArtifactServer_GetArtifactFile(t *testing.T) {
+	s := newServer()
+
+	tests := []struct {
+		path string
+		// expected results:
+		redirect       bool
+		location       string
+		success        bool
+		isDirectory    bool
+		directoryFiles []string // verify these files are in there, if this is a directory
+	}{
+		{
+			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory",
+			redirect: true,
+			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+		},
+		{
+			path:     "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/",
+			redirect: true,
+			location: "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/index.html",
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/subdirectory/",
+			success:     true,
+			isDirectory: true,
+			directoryFiles: []string{
+				"..",
+				"b.txt",
+				"c.txt",
+			},
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/a.txt",
+			success:     true,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/subdirectory/b.txt",
+			success:     true,
+			isDirectory: false,
+		},
+		{
+			path:        "/artifact-files/my-ns/workflows/my-wf/my-node/outputs/my-s3-artifact-directory/notafile.txt",
+			success:     false,
+			isDirectory: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			r := &http.Request{}
+			r.URL = mustParse(tt.path)
+			recorder := httptest.NewRecorder()
+
+			s.GetArtifactFile(recorder, r)
+			if tt.redirect {
+				assert.Equal(t, 307, recorder.Result().StatusCode)
+				assert.Equal(t, tt.location, recorder.Header().Get("Location"))
+			} else if tt.success {
+				if assert.Equal(t, 200, recorder.Result().StatusCode) {
+					all, err := io.ReadAll(recorder.Result().Body)
+					if err != nil {
+						panic(fmt.Sprintf("failed to read http body: %v", err))
+					}
+					if tt.isDirectory {
+						fmt.Printf("got directory listing:\n%s\n", all)
+						// verify that the files are contained in the listing we got back
+						assert.Equal(t, len(tt.directoryFiles), strings.Count(string(all), "<li>"))
+						for _, file := range tt.directoryFiles {
+							assert.True(t, strings.Contains(string(all), file))
+						}
+					} else {
+						assert.Equal(t, "my-data", string(all))
+					}
+				}
+			} else {
+				assert.NotEqual(t, 200, recorder.Result().StatusCode)
+			}
+		})
+	}
 }
 
 func TestArtifactServer_GetOutputArtifact(t *testing.T) {
@@ -161,11 +305,16 @@ func TestArtifactServer_GetOutputArtifact(t *testing.T) {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
-			w := &testhttp.TestResponseWriter{}
-			s.GetOutputArtifact(w, r)
-			if assert.Equal(t, 200, w.StatusCode) {
-				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
-				assert.Equal(t, "my-data", w.Output)
+			recorder := httptest.NewRecorder()
+
+			s.GetOutputArtifact(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Header().Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
 		})
 	}
@@ -188,14 +337,32 @@ func TestArtifactServer_GetInputArtifact(t *testing.T) {
 		t.Run(tt.artifactName, func(t *testing.T) {
 			r := &http.Request{}
 			r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node/%s", tt.artifactName))
-			w := &testhttp.TestResponseWriter{}
-			s.GetInputArtifact(w, r)
-			if assert.Equal(t, 200, w.StatusCode) {
-				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), w.Header().Get("Content-Disposition"))
-				assert.Equal(t, "my-data", w.Output)
+			recorder := httptest.NewRecorder()
+			s.GetInputArtifact(recorder, r)
+			if assert.Equal(t, 200, recorder.Result().StatusCode) {
+				assert.Equal(t, fmt.Sprintf(`filename="%s"`, tt.fileName), recorder.Result().Header.Get("Content-Disposition"))
+				all, err := io.ReadAll(recorder.Result().Body)
+				if err != nil {
+					panic(fmt.Sprintf("failed to read http body: %v", err))
+				}
+				assert.Equal(t, "my-data", string(all))
 			}
 		})
 	}
+}
+
+// TestArtifactServer_NodeWithoutArtifact makes sure that the server doesn't panic due to a nil-pointer error
+// when trying to get an artifact from a node result without any artifacts
+func TestArtifactServer_NodeWithoutArtifact(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	r.URL = mustParse(fmt.Sprintf("/input-artifacts/my-ns/my-wf/my-node-no-artifacts/%s", "my-artifact"))
+	w := &testhttp.TestResponseWriter{}
+	s.GetInputArtifact(w, r)
+	// make sure there is no nil pointer panic
+	assert.Equal(t, 500, w.StatusCode)
+	s.GetOutputArtifact(w, r)
+	assert.Equal(t, 500, w.StatusCode)
 }
 
 func TestArtifactServer_GetOutputArtifactWithoutInstanceID(t *testing.T) {
@@ -213,5 +380,50 @@ func TestArtifactServer_GetOutputArtifactByUID(t *testing.T) {
 	r.URL = mustParse("/artifacts/my-uuid/my-node/my-artifact")
 	w := &testhttp.TestResponseWriter{}
 	s.GetOutputArtifactByUID(w, r)
-	assert.Equal(t, 500, w.StatusCode)
+	assert.Equal(t, 401, w.StatusCode)
+}
+
+func TestArtifactServer_GetArtifactByUIDInvalidRequestPath(t *testing.T) {
+	s := newServer()
+	r := &http.Request{}
+	// missing my-artifact part to have a valid URL
+	r.URL = mustParse("/input-artifacts/my-uuid/my-node")
+	w := &testhttp.TestResponseWriter{}
+	s.GetInputArtifactByUID(w, r)
+	// make sure there is no index out of bounds error
+	assert.Equal(t, 400, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
+
+	w = &testhttp.TestResponseWriter{}
+	s.GetOutputArtifactByUID(w, r)
+	assert.Equal(t, 400, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
+}
+
+func TestArtifactServer_httpBadRequestError(t *testing.T) {
+	s := newServer()
+	w := &testhttp.TestResponseWriter{}
+	s.httpBadRequestError(w)
+
+	assert.Equal(t, http.StatusBadRequest, w.StatusCode)
+	assert.Contains(t, w.Output, "Bad Request")
+}
+
+func TestArtifactServer_httpFromError(t *testing.T) {
+	s := newServer()
+	w := &testhttp.TestResponseWriter{}
+	err := errors.New("math: square root of negative number")
+
+	s.httpFromError(err, w)
+
+	assert.Equal(t, http.StatusInternalServerError, w.StatusCode)
+	assert.Equal(t, "Internal Server Error\n", w.Output)
+
+	w = &testhttp.TestResponseWriter{}
+	err = apierr.NewUnauthorized("")
+
+	s.httpFromError(err, w)
+
+	assert.Equal(t, http.StatusUnauthorized, w.StatusCode)
+	assert.Contains(t, w.Output, "Unauthorized")
 }

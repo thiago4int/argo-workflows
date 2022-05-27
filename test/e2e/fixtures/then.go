@@ -3,8 +3,6 @@ package fixtures
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"reflect"
 	"testing"
 	"time"
@@ -15,9 +13,14 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+
 	wfv1 "github.com/argoproj/argo-workflows/v3/pkg/apis/workflow/v1alpha1"
 	"github.com/argoproj/argo-workflows/v3/pkg/client/clientset/versioned/typed/workflow/v1alpha1"
+	"github.com/argoproj/argo-workflows/v3/workflow/common"
 	"github.com/argoproj/argo-workflows/v3/workflow/hydrator"
+	"github.com/argoproj/argo-workflows/v3/workflow/util"
 )
 
 type Then struct {
@@ -85,9 +88,15 @@ func (t *Then) ExpectWorkflowNode(selector func(status wfv1.NodeStatus) bool, f 
 		if n != nil {
 			_, _ = fmt.Println("Found node", "id="+n.ID, "type="+n.Type)
 			if n.Type == wfv1.NodeTypePod {
+				wf := &wfv1.Workflow{
+					ObjectMeta: *metadata,
+				}
+				version := util.GetWorkflowPodNameVersion(wf)
+				podName := util.PodName(t.wf.Name, n.Name, n.TemplateName, n.ID, version)
+
 				var err error
 				ctx := context.Background()
-				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, n.ID, metav1.GetOptions{})
+				p, err = t.kubeClient.CoreV1().Pods(t.wf.Namespace).Get(ctx, podName, metav1.GetOptions{})
 				if err != nil {
 					if !apierr.IsNotFound(err) {
 						t.t.Error(err)
@@ -176,37 +185,40 @@ func (t *Then) ExpectAuditEvents(filter func(event apiv1.Event) bool, num int, b
 	return t
 }
 
-func (t *Then) ExpectArtifact(nodeName, artifactName string, f func(t *testing.T, data []byte)) {
+func (t *Then) ExpectArtifact(nodeName string, artifactName string, f func(t *testing.T, object *minio.Object, err error)) {
 	t.t.Helper()
-	nodeId := nodeIdForName(nodeName, t.wf)
-	url := "http://localhost:2746/artifacts/" + Namespace + "/" + t.wf.Name + "/" + nodeId + "/" + artifactName
-	println(url)
-	req, err := http.NewRequest("GET", url, nil)
+
+	c, err := minio.New("localhost:9000", &minio.Options{
+		Creds: credentials.NewStaticV4("admin", "password", ""),
+	})
+
 	if err != nil {
-		t.t.Fatal(err)
+		t.t.Error(err)
 	}
-	req.Header.Set("Authorization", "Bearer "+t.bearerToken)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		t.t.Fatal(err)
+
+	if nodeName == "-" {
+		nodeName = t.wf.Name
 	}
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.t.Fatal(err)
-	}
-	if resp.StatusCode != 200 {
-		t.t.Fatal(fmt.Errorf("HTTP request not OK: %s: %q", resp.Status, data))
-	}
-	f(t.t, data)
+
+	n := t.wf.GetNodeByName(nodeName)
+	a := n.GetOutputs().GetArtifactByName(artifactName)
+	key, _ := a.GetKey()
+
+	object, err := c.GetObject(context.Background(), "my-bucket", key, minio.GetObjectOptions{})
+	f(t.t, object, err)
 }
 
-func nodeIdForName(nodeName string, wf *wfv1.Workflow) string {
-	if nodeName == "-" {
-		return wf.NodeID(wf.Name)
-	} else {
-		return wf.NodeID(nodeName)
+func (t *Then) ExpectPods(f func(t *testing.T, pods []apiv1.Pod)) *Then {
+	t.t.Helper()
+
+	list, err := t.kubeClient.CoreV1().Pods(t.wf.Namespace).List(context.Background(), metav1.ListOptions{LabelSelector: common.LabelKeyWorkflow + "=" + t.wf.Name})
+	if err != nil {
+		t.t.Fatal(err)
 	}
+
+	f(t.t, list.Items)
+
+	return t
 }
 
 func (t *Then) RunCli(args []string, block func(t *testing.T, output string, err error)) *Then {
