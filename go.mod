@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/storage v1.31.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.3
-	github.com/TwiN/go-color v1.4.0
+	github.com/TwiN/go-color v1.4.1
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.8+incompatible
 	github.com/antonmedv/expr v1.12.7
 	github.com/argoproj-labs/argo-dataflow v0.10.3
