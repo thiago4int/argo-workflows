@@ -8,7 +8,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/TwiN/go-color v1.4.1
 	github.com/aliyun/aliyun-oss-go-sdk v2.2.9+incompatible
-	github.com/antonmedv/expr v1.15.0
+	github.com/antonmedv/expr v1.15.1
 	github.com/argoproj-labs/argo-dataflow v0.10.3
 	github.com/argoproj/argo-events v1.8.1
 	github.com/argoproj/pkg v0.13.6
