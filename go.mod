@@ -10,7 +10,7 @@ require (
 	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/antonmedv/expr v1.15.5
 	github.com/argoproj-labs/argo-dataflow v0.10.3
-	github.com/argoproj/argo-events v1.9.0
+	github.com/argoproj/argo-events v1.9.1
 	github.com/argoproj/pkg v0.13.6
 	github.com/blushft/go-diagrams v0.0.0-20201006005127-c78c821223d9
 	github.com/colinmarc/hdfs v1.1.4-0.20180805212432-9746310a4d31
@@ -53,7 +53,7 @@ require (
 	golang.org/x/sync v0.6.0
 	golang.org/x/time v0.5.0
 	google.golang.org/api v0.163.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240122161410-6c6643bf1457
+	google.golang.org/genproto/googleapis/api v0.0.0-20240125205218-1f4bbc51befe
 	google.golang.org/grpc v1.61.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
 	gopkg.in/jcmturner/gokrb5.v5 v5.3.0
