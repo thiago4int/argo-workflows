@@ -2208,10 +2208,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-datepicker@^6.0.2":
-  version "6.0.2"
-  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-6.0.2.tgz#b05f1f0434c5d22361e74412eb5450d43638553f"
-  integrity sha512-RnBAD9hO9GgSNZ2WjUZKltP3OkLxHNxmvFHyp8SC5A5qItPH20VWj/4krJ3iqGUiH1pqV/vRTOQKeJfEOqcXSw==
+"@types/react-datepicker@^6.0.3":
+  version "6.0.3"
+  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-6.0.3.tgz#7447af00555e18b392b87b97d071da43513c8f5b"
+  integrity sha512-3x5flRBrEgC3fFrBryFIrxbLf8bOkte/GNryPjfnXu3my4/XZeaML/01U+XArMCLfk2d3pei6ccNIgTlpe4c5g==
   dependencies:
     "@floating-ui/react" "^0.26.2"
     "@types/react" "*"
