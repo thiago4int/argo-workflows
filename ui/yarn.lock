@@ -2208,10 +2208,10 @@
   dependencies:
     "@types/react" "*"
 
-"@types/react-datepicker@^6.0.3":
-  version "6.0.3"
-  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-6.0.3.tgz#7447af00555e18b392b87b97d071da43513c8f5b"
-  integrity sha512-3x5flRBrEgC3fFrBryFIrxbLf8bOkte/GNryPjfnXu3my4/XZeaML/01U+XArMCLfk2d3pei6ccNIgTlpe4c5g==
+"@types/react-datepicker@^6.2.0":
+  version "6.2.0"
+  resolved "https://registry.yarnpkg.com/@types/react-datepicker/-/react-datepicker-6.2.0.tgz#1c93c10d12d1d683eacf46a82e35b953cd0da117"
+  integrity sha512-+JtO4Fm97WLkJTH8j8/v3Ldh7JCNRwjMYjRaKh4KHH0M3jJoXtwiD3JBCsdlg3tsFIw9eQSqyAPeVDN2H2oM9Q==
   dependencies:
     "@floating-ui/react" "^0.26.2"
     "@types/react" "*"
@@ -8884,10 +8884,10 @@ react-copy-to-clipboard@5.1.0:
     copy-to-clipboard "^3.3.1"
     prop-types "^15.8.1"
 
-react-datepicker@^6.2.0:
-  version "6.2.0"
-  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-6.2.0.tgz#c32a45a6798ce92faa648b4ed418f740e8c64233"
-  integrity sha512-GzEOiE6yLfp9P6XNkOhXuYtZHzoAx3tirbi7/dj2WHlGM+NGE1lefceqGR0ZrYsYaqsNJhIJFTgwUpzVzA+mjw==
+react-datepicker@^6.3.0:
+  version "6.3.0"
+  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-6.3.0.tgz#1258db8cfaf937354f656c90ba7f39a0e9d8f0f1"
+  integrity sha512-1kDbFRDxfV7IMO/m6DgCHk+mzSbFMtJC1YTwp34rcBEMd6lVTROH7IUcCgl08rwTnjqV0iG3IzGlspB8wgjaBA==
   dependencies:
     "@floating-ui/react" "^0.26.2"
     classnames "^2.2.6"
