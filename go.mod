@@ -3,7 +3,7 @@ module github.com/argoproj/argo-workflows/v3
 go 1.18
 
 require (
-	cloud.google.com/go/storage v1.40.0
+	cloud.google.com/go/storage v1.41.0
 	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible
 	github.com/Masterminds/sprig/v3 v3.2.3
 	github.com/TwiN/go-color v1.4.1
@@ -72,7 +72,7 @@ require (
 	cloud.google.com/go/auth v0.4.2 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	cloud.google.com/go/iam v1.1.7 // indirect
+	cloud.google.com/go/iam v1.1.8 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/azure-sdk-for-go v65.0.0+incompatible // indirect
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
