@@ -16,7 +16,7 @@
     },
     "dependencies": {
         "argo-ui": "https://github.com/argoproj/argo-ui.git#v2.5.0",
-        "chart.js": "^4.4.6",
+        "chart.js": "^4.4.7",
         "chartjs-plugin-annotation": "^0.5.7",
         "classnames": "^2.5.1",
         "cron-parser": "^4.9.0",
