@@ -908,10 +908,10 @@
     "@babel/types" "^7.4.4"
     esutils "^2.0.2"
 
-"@babel/runtime-corejs3@^7.20.7", "@babel/runtime-corejs3@^7.22.15", "@babel/runtime-corejs3@^7.24.7":
-  version "7.26.0"
-  resolved "https://registry.yarnpkg.com/@babel/runtime-corejs3/-/runtime-corejs3-7.26.0.tgz#5af6bed16073eb4a0191233d61e158a5c768c430"
-  integrity sha512-YXHu5lN8kJCb1LOb9PgV6pvak43X2h4HvRApcN5SdWeaItQOzfn1hgP6jasD6KWQyJDBxrVmA9o9OivlnNJK/w==
+"@babel/runtime-corejs3@^7.20.7", "@babel/runtime-corejs3@^7.22.15", "@babel/runtime-corejs3@^7.26.9":
+  version "7.26.9"
+  resolved "https://registry.yarnpkg.com/@babel/runtime-corejs3/-/runtime-corejs3-7.26.9.tgz#8b73bae47453aa3dd2839ac52598581a7dd8332f"
+  integrity sha512-5EVjbTegqN7RSJle6hMWYxO4voo4rI+9krITk+DWR+diJgGrjZjrIBnJhjrHYYQsFgI7j1w1QnrvV7YSKBfYGg==
   dependencies:
     core-js-pure "^3.30.2"
     regenerator-runtime "^0.14.0"
@@ -2402,6 +2402,11 @@
   integrity sha512-c2M9adVG7t28t1pq19K9Jt20VLQf0P/fwJwnfcmsVVsdkwCWhRmbKDu+tIs0/NGwJ/7GY8lBx+iKZxuDI5gDbw==
   dependencies:
     "@types/react" "*"
+
+"@types/trusted-types@^2.0.7":
+  version "2.0.7"
+  resolved "https://registry.yarnpkg.com/@types/trusted-types/-/trusted-types-2.0.7.tgz#baccb07a970b91707df3a3e8ba6896c57ead2d11"
+  integrity sha512-ScaPdn1dQczgbl0QFTeTOmVHFULt394XJgOQNoyVhZ6r2vLnMLJfBPd53SB52T/3G36VI1/g2MZaX0cwDuXsfw==
 
 "@types/unist@*":
   version "2.0.3"
@@ -4520,10 +4525,12 @@ domhandler@^4.0.0, domhandler@^4.2.0, domhandler@^4.3.1:
   dependencies:
     domelementtype "^2.2.0"
 
-dompurify@=3.1.6:
-  version "3.1.6"
-  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.1.6.tgz#43c714a94c6a7b8801850f82e756685300a027e2"
-  integrity sha512-cTOAhc36AalkjtBpfG6O8JimdTMWNXjiePT2xQH/ppBGi/4uIpmj8eKyIkMJErXWARyINV/sB38yf8JCLF5pbQ==
+dompurify@=3.2.4:
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/dompurify/-/dompurify-3.2.4.tgz#af5a5a11407524431456cf18836c55d13441cd8e"
+  integrity sha512-ysFSFEDVduQpyhzAob/kkuJjf5zWkZD8/A9ywSp1byueyuCfHamrCBa14/Oc2iiB0e51B+NpxSl5gmzn+Ms/mg==
+  optionalDependencies:
+    "@types/trusted-types" "^2.0.7"
 
 domutils@^2.5.2, domutils@^2.8.0:
   version "2.8.0"
@@ -10494,19 +10501,19 @@ swagger-client@^3.34.0:
     ramda "^0.30.1"
     ramda-adjunct "^5.0.0"
 
-swagger-ui-react@^5.18.3:
-  version "5.18.3"
-  resolved "https://registry.yarnpkg.com/swagger-ui-react/-/swagger-ui-react-5.18.3.tgz#e5e5f4e794201f66cf2aa231d96e3caef1a272ae"
-  integrity sha512-TlcIdQlcbdvRpUP3+B/J08ARM6cC29eMRrNxhTjP/MtYlbuGg6DWET7Is65YTlsk3TE6NhRYVgf3sdqcLooIBw==
+swagger-ui-react@^5.19.0:
+  version "5.19.0"
+  resolved "https://registry.yarnpkg.com/swagger-ui-react/-/swagger-ui-react-5.19.0.tgz#790c4fc40fb251ad23740432d36f8de82952b6ec"
+  integrity sha512-8O8KImDLt4fIfSWzIQ/m3Uo8JHsTxXOne1SwBZBQPA6tG0wPcPWePDEaRktp27T6bNXQruag4bp3rD6hJImHAA==
   dependencies:
-    "@babel/runtime-corejs3" "^7.24.7"
+    "@babel/runtime-corejs3" "^7.26.9"
     "@braintree/sanitize-url" "=7.0.4"
     "@scarf/scarf" "=1.4.0"
     base64-js "^1.5.1"
     classnames "^2.5.1"
     css.escape "1.5.1"
     deep-extend "0.6.0"
-    dompurify "=3.1.6"
+    dompurify "=3.2.4"
     ieee754 "^1.2.1"
     immutable "^3.x.x"
     js-file-download "^0.4.12"
