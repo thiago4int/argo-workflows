@@ -8920,10 +8920,10 @@ react-copy-to-clipboard@5.1.0:
     copy-to-clipboard "^3.3.1"
     prop-types "^15.8.1"
 
-react-datepicker@*, react-datepicker@^9.0.0:
-  version "9.0.0"
-  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-9.0.0.tgz#f1d8644ba2a3de8278c8d4adb4b371765e830acc"
-  integrity sha512-LGzKgBk5NUEcXUeSEJY2ICCCmPusm9UGRkNKRXCPgpUzoMx2CCsa0mOHTyv+itQeW7tR/jgGEpq5q/afZjGEFg==
+react-datepicker@*, react-datepicker@^9.1.0:
+  version "9.1.0"
+  resolved "https://registry.yarnpkg.com/react-datepicker/-/react-datepicker-9.1.0.tgz#638c636780ae98f1930f87e1f76850de5fc37d5c"
+  integrity sha512-lOp+m5bc+ttgtB5MHEjwiVu4nlp4CvJLS/PG1OiOe5pmg9kV73pEqO8H0Geqvg2E8gjqTaL9eRhSe+ZpeKP3nA==
   dependencies:
     "@floating-ui/react" "^0.27.15"
     clsx "^2.1.1"
