@@ -9020,10 +9020,10 @@ react-lifecycles-compat@^3.0.0, react-lifecycles-compat@^3.0.4:
   resolved "https://registry.yarnpkg.com/react-lifecycles-compat/-/react-lifecycles-compat-3.0.4.tgz#4f1a273afdfc8f3488a8c516bfda78f872352362"
   integrity sha512-fBASbA6LnOU9dOU2eW7aQ8xmYBSXUIWr+UmF9b1efZBazGNO+rcXT/icdKnYm2pTwcRylVUYwW7H1PHfLekVzA==
 
-react-moment@^1.1.4:
-  version "1.1.4"
-  resolved "https://registry.yarnpkg.com/react-moment/-/react-moment-1.1.4.tgz#cf323a5e50cf60a878765515cff02e7dc4c858b5"
-  integrity sha512-boA0wJV6+7mK4utLtsDn6SSJgZsTNus9jQg3p9Y/kgx+gXz6i/bcpbFWOd2yiOPDYRTjJk8VHd5J+b6CQibOGw==
+react-moment@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/react-moment/-/react-moment-1.2.0.tgz#5145f0709535ec5dab088859a85528e255178788"
+  integrity sha512-k6YnGHNmQU0Tx/HS6vq2TrcHHneeCn/IlL5NiiICnUFkt6clxBx6la0KPf3EZ59NFEohfX21AL1+FX20GJ95/Q==
 
 react-monaco-editor@^0.59.0:
   version "0.59.0"
