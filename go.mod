@@ -53,7 +53,7 @@ require (
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/time v0.14.0
-	google.golang.org/api v0.259.0
+	google.golang.org/api v0.260.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217
 	google.golang.org/grpc v1.78.0
 	gopkg.in/go-playground/webhooks.v5 v5.17.0
@@ -156,7 +156,7 @@ require (
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/google/uuid v1.6.0 // indirect
-	github.com/googleapis/enterprise-certificate-proxy v0.3.7 // indirect
+	github.com/googleapis/enterprise-certificate-proxy v0.3.9 // indirect
 	github.com/googleapis/gax-go/v2 v2.16.0 // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
 	github.com/huandu/xstrings v1.5.0 // indirect
