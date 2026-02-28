@@ -4340,10 +4340,10 @@ cron-parser@^5.5.0:
   dependencies:
     luxon "^3.7.1"
 
-cronstrue@^3.12.0:
-  version "3.12.0"
-  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-3.12.0.tgz#ba7ac3173fc4b3b0c384c160491f134fcc24ebed"
-  integrity sha512-k9oiM4G7U1GEEktOGfZabldP0gtFWTsaRVqq9X06ifytr73mpSYYdt+zGZBeS5lRCsqMfq0y7oSHycWGIJSo6g==
+cronstrue@^3.13.0:
+  version "3.13.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-3.13.0.tgz#2ac6e91ec2ba8c73216fe095eeb41d6e81512315"
+  integrity sha512-M06cKwRIN46AyuM8BOmF1HUkBTkd3/h7uYImnrH1T3wtRKBGOibVo3jZ42VheEvx8LtgZbG/4GI35vfIxYxMug==
 
 cross-spawn@^6.0.0:
   version "6.0.5"
@@ -7581,14 +7581,7 @@ minimalistic-crypto-utils@^1.0.0, minimalistic-crypto-utils@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/minimalistic-crypto-utils/-/minimalistic-crypto-utils-1.0.1.tgz#f6c00c1c0b082246e5c4d99dfb8c7c083b2b582a"
 
-minimatch@^10.2.2:
-  version "10.2.2"
-  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-10.2.2.tgz#361603ee323cfb83496fea2ae17cc44ea4e1f99f"
-  integrity sha512-+G4CpNBxa5MprY+04MbgOw1v7So6n5JY166pFi9KfYwT78fxScCeSNQSNzp6dpPSW2rONOps6Ocam1wFhCgoVw==
-  dependencies:
-    brace-expansion "^5.0.2"
-
-minimatch@^10.2.1:
+minimatch@^10.2.1, minimatch@^10.2.2:
   version "10.2.2"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-10.2.2.tgz#361603ee323cfb83496fea2ae17cc44ea4e1f99f"
   integrity sha512-+G4CpNBxa5MprY+04MbgOw1v7So6n5JY166pFi9KfYwT78fxScCeSNQSNzp6dpPSW2rONOps6Ocam1wFhCgoVw==
