@@ -4839,10 +4839,10 @@ cron-parser@^5.10.2:
   dependencies:
     luxon "^3.7.2"
 
-cronstrue@^3.37.0:
-  version "3.37.0"
-  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-3.37.0.tgz#eeba023923dfc53a7d1fe6d2564b2da74771679b"
-  integrity sha512-Nc5PL23nz3HjRcHRc6O7ikCc3lnFM2SQg5nwSDMGOi0jv0g178mUMClgfT6WuOevrEsPOTQCWOaGFV5PKFYymg==
+cronstrue@^3.38.0:
+  version "3.38.0"
+  resolved "https://registry.yarnpkg.com/cronstrue/-/cronstrue-3.38.0.tgz#8ba0833d9abcda7fa803b3f0d7c031407015594a"
+  integrity sha512-i10xR7fS4AH9LKwmt3gYdt/5lSsB2qFGSNfC8aeyYybxo48DCMz+nUrSVI4kUj8yo+SgTbMJqp/BWEem9avlcA==
 
 cross-spawn@^6.0.0:
   version "6.0.5"
